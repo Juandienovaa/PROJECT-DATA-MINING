@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediksi Stok Penjualan Toko</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Prediksi Stok Penjualan Toko</h1>
+
+        <!-- Form Input Data -->
+        <form id="data-form">
+            <label for="bulan">Pilih Bulan:</label>
+            <select name="bulan" id="bulan" required>
+                <option value="Januari">Januari</option>
+                <option value="Februari">Februari</option>
+                <option value="Maret">Maret</option>
+                <option value="April">April</option>
+                <option value="Mei">Mei</option>
+                <option value="Juni">Juni</option>
+                <option value="Juli">Juli</option>
+                <option value="Agustus">Agustus</option>
+                <option value="September">September</option>
+                <option value="Oktober">Oktober</option>
+                <option value="November">November</option>
+                <option value="Desember">Desember</option>
+            </select>
+
+            <label for="penjualan">Jumlah Penjualan:</label>
+            <input type="number" name="penjualan" id="penjualan" required>
+
+            <label for="stok_awal">Stok Awal:</label>
+            <input type="number" name="stok_awal" id="stok_awal" required>
+
+            <label for="kategori">Kategori Produk:</label>
+            <select name="kategori" id="kategori" required>
+                <option value="Paket Data">Paket Data</option>
+                <option value="Pulsa">Pulsa</option>
+                <option value="Kartu Perdana">Kartu Perdana</option>
+            </select>
+
+            <button type="submit">Tambah Data</button>
+        </form>
+
+        <!-- Tombol untuk Cek Prediksi -->
+        <button id="cek-prediksi-btn">Cek Prediksi</button>
+
+        <!-- Area Grafik -->
+        <div id="graph-area"></div>
+
+        <!-- Box Prediksi -->
+        <div id="stok-prediksi" class="prediction-box"></div>
+
+        <!-- Area Notifikasi -->
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <script>
+        // Submit Form Tanpa Refresh Halaman
+        document.getElementById('data-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const formData = new FormData(this);
+            const response = await fetch('/add_data', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            const notification = document.getElementById('notification');
+            notification.innerHTML = result.message;
+            notification.classList.add('show');
+
+            // Hilangkan notifikasi setelah 3 detik
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+
+            this.reset();
+        });
+
+        // Cek Prediksi dan Tampilkan Grafik
+        document.getElementById('cek-prediksi-btn').onclick = async function() {
+            const response = await fetch('/show_graph', {
+                method: 'POST'
+            });
+
+            const result = await response.json();
+
+            const graphArea = document.getElementById('graph-area');
+            const stokPrediksi = document.getElementById('stok-prediksi');
+
+            graphArea.innerHTML = '';
+            stokPrediksi.innerHTML = '';
+
+            if (result.status === 'success') {
+                for (const kategori in result.graphs) {
+                    // Tampilkan setiap grafik berdasarkan kategori
+                    graphArea.innerHTML += `
+                        <h2>Grafik Prediksi Stok - ${kategori}</h2>
+                        <img src="${result.graphs[kategori]}" alt="Grafik Prediksi ${kategori}" class="graph-img">
+                    `;
+
+                    // Tampilkan prediksi stok per kategori
+                    stokPrediksi.innerHTML += `
+                        <div class="prediction-card">
+                            <h3>Prediksi ${kategori}</h3>
+                            <p>Stok Prediksi Bulan Depan: <strong>${result.predictions[kategori]}</strong></p>
+                            <p>${result.explanations[kategori]}</p>
+                        </div>
+                    `;
+                }
+            } else {
+                alert(result.message);
+            }
+        };
+    </script>
+</body>
+</html>
